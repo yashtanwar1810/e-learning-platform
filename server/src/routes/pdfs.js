@@ -6,7 +6,7 @@ import fsp from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import pdfParsePkg from "pdf-parse";
+import { pdfParsePkg } from "pdf-parse";
 import auth from "../middleware/auth.js";
 import Pdf from "../models/Pdf.js";
 import * as gemini from "../services/gemini.js";
