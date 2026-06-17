@@ -1,12 +1,19 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+const MODEL_CANDIDATES = [
+  process.env.GEMINI_MODEL,
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash-002",
+].filter(Boolean);
+
 function client() {
   if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not set");
   return new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 }
 
-function model() {
-  return client().getGenerativeModel({ model: "gemini-1.5-flash" });
+function model(name) {
+  return client().getGenerativeModel({ model: name });
 }
 
 function trim(text, max = 18000) {
@@ -30,17 +37,44 @@ function parseJson(text) {
 }
 
 async function runText(prompt) {
-  const res = await model().generateContent(prompt);
-  return res.response.text();
+  return runWithFallback(async (name) => {
+    const res = await model(name).generateContent(prompt);
+    return res.response.text();
+  });
 }
 
 async function runJson(prompt) {
-  const m = client().getGenerativeModel({
-    model: "gemini-1.5-flash",
-    generationConfig: { responseMimeType: "application/json" },
+  return runWithFallback(async (name) => {
+    const m = client().getGenerativeModel({
+      model: name,
+      generationConfig: { responseMimeType: "application/json" },
+    });
+    const res = await m.generateContent(prompt);
+    return parseJson(res.response.text());
   });
-  const res = await m.generateContent(prompt);
-  return parseJson(res.response.text());
+}
+
+function isModelNotFoundError(error) {
+  const message = String(error?.message || "");
+  return (
+    error?.status === 404 ||
+    /404 Not Found/i.test(message) ||
+    /models\/[^ ]+ is not found/i.test(message) ||
+    /not supported for generateContent/i.test(message)
+  );
+}
+
+async function runWithFallback(execute) {
+  let lastError;
+  for (const name of MODEL_CANDIDATES) {
+    try {
+      return await execute(name);
+    } catch (error) {
+      lastError = error;
+      if (!isModelNotFoundError(error)) throw error;
+    }
+  }
+  throw lastError || new Error("No Gemini models are available");
 }
 
 exports.generateSummary = (text) => {

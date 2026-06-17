@@ -10,6 +10,7 @@ Express + MongoDB + Gemini backend that powers the React frontend in this repo.
    - `MONGO_URI` — MongoDB Atlas connection string
    - `JWT_SECRET` — any long random string
    - `GEMINI_API_KEY` — from https://aistudio.google.com/app/apikey
+   - `GEMINI_MODEL` — optional override, defaults to `gemini-2.5-flash`
 4. `npm run dev` — server runs on http://localhost:5000
 
 The frontend defaults to `http://localhost:5000/api` (override with `VITE_API_URL`).

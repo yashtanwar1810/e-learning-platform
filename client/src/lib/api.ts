@@ -1,4 +1,4 @@
-const RAW_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:5000/api";
+const RAW_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "https://e-learning-platform-t37c.onrender.com/api";
 export const API_BASE = RAW_BASE.replace(/\/$/, "");
 
 const TOKEN_KEY = "auth_token";
