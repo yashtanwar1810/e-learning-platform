@@ -6,12 +6,10 @@ import fsp from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { pdfParsePkg } from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 import auth from "../middleware/auth.js";
 import Pdf from "../models/Pdf.js";
 import * as gemini from "../services/gemini.js";
-
-const { PDFParse } = pdfParsePkg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
