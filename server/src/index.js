@@ -1,10 +1,12 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
+import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+import mongoose from "mongoose";
 
-const authRoutes = require("./routes/auth");
-const pdfRoutes = require("./routes/pdfs");
+import authRoutes from "./routes/auth.js";
+import pdfRoutes from "./routes/pdfs.js";
+
+dotenv.config();
 
 const app = express();
 
@@ -20,7 +22,7 @@ app.use(
   cors({
     origin: parseCorsOrigins(process.env.CORS_ORIGIN),
     credentials: true,
-  })
+  }),
 );
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: false, limit: "2mb" }));
@@ -44,7 +46,7 @@ async function start() {
   app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
 }
 
-start().catch((e) => {
-  console.error("Failed to start:", e);
+start().catch((error) => {
+  console.error("Failed to start:", error);
   process.exit(1);
 });

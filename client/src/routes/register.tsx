@@ -1,4 +1,3 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
@@ -6,12 +5,9 @@ import { AuthCard } from "@/components/AuthCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Link, useNavigate } from "@/lib/router";
 
-export const Route = createFileRoute("/register")({
-  component: RegisterPage,
-});
-
-function RegisterPage() {
+export function RegisterPage() {
   const { register, user } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -20,7 +16,7 @@ function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) navigate({ to: "/library" });
+    if (user) navigate("/library", { replace: true });
   }, [user, navigate]);
 
   const onSubmit = async (e: FormEvent) => {
@@ -33,9 +29,9 @@ function RegisterPage() {
     try {
       await register(name, email, password);
       toast.success("Account created. Welcome!");
-      navigate({ to: "/library" });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Registration failed");
+      navigate("/library", { replace: true });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Registration failed");
     } finally {
       setLoading(false);
     }

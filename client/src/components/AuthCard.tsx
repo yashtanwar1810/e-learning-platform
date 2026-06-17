@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
 import { Brain } from "lucide-react";
 import type { ReactNode } from "react";
+import { Link } from "@/lib/router";
 
 export function AuthCard({
   title,

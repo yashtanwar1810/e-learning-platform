@@ -1,4 +1,3 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { toast } from "sonner";
 import { FileText, Trash2, Upload, Sparkles, Loader2 } from "lucide-react";
@@ -6,14 +5,7 @@ import { Navbar } from "@/components/Navbar";
 import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { apiFetch, ApiError } from "@/lib/api";
-
-export const Route = createFileRoute("/library")({
-  component: () => (
-    <RequireAuth>
-      <LibraryPage />
-    </RequireAuth>
-  ),
-});
+import { Link } from "@/lib/router";
 
 type Pdf = {
   _id?: string;
@@ -29,7 +21,15 @@ type Pdf = {
 const idOf = (p: Pdf) => p._id ?? p.id ?? "";
 const titleOf = (p: Pdf) => p.title ?? p.originalName ?? p.filename ?? "Untitled";
 
-function LibraryPage() {
+export function LibraryPage() {
+  return (
+    <RequireAuth>
+      <LibraryContent />
+    </RequireAuth>
+  );
+}
+
+function LibraryContent() {
   const [pdfs, setPdfs] = useState<Pdf[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -42,8 +42,8 @@ function LibraryPage() {
       const res = await apiFetch<Pdf[] | { pdfs: Pdf[] }>("/pdfs");
       const list = Array.isArray(res) ? res : res.pdfs;
       setPdfs(list ?? []);
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Failed to load PDFs");
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to load PDFs");
     } finally {
       setLoading(false);
     }
@@ -66,8 +66,8 @@ function LibraryPage() {
       await apiFetch("/pdfs", { method: "POST", formData: fd });
       toast.success(`Uploaded ${file.name}`);
       load();
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Upload failed");
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Upload failed");
     } finally {
       setUploading(false);
     }
@@ -90,10 +90,10 @@ function LibraryPage() {
     if (!confirm("Delete this PDF?")) return;
     try {
       await apiFetch(`/pdfs/${id}`, { method: "DELETE" });
-      setPdfs((p) => p.filter((x) => idOf(x) !== id));
+      setPdfs((current) => current.filter((item) => idOf(item) !== id));
       toast.success("Deleted");
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Delete failed");
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Delete failed");
     }
   };
 
@@ -117,10 +117,7 @@ function LibraryPage() {
             dragOver ? "border-primary bg-accent/40" : "border-border bg-card"
           }`}
         >
-          <span
-            className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-primary-foreground shadow-glow"
-            style={{ background: "var(--gradient-primary)" }}
-          >
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-primary-foreground shadow-glow" style={{ background: "var(--gradient-primary)" }}>
             {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Upload className="h-6 w-6" />}
           </span>
           <h3 className="mt-4 text-lg font-semibold">{uploading ? "Uploading…" : "Drop a PDF here"}</h3>
@@ -144,15 +141,12 @@ function LibraryPage() {
             </div>
           ) : (
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {pdfs.map((p) => {
-                const id = idOf(p);
+              {pdfs.map((pdf) => {
+                const id = idOf(pdf);
                 return (
                   <div key={id} className="group flex flex-col rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
                     <div className="flex items-start justify-between">
-                      <span
-                        className="flex h-10 w-10 items-center justify-center rounded-xl text-primary-foreground shadow-glow"
-                        style={{ background: "var(--gradient-primary)" }}
-                      >
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl text-primary-foreground shadow-glow" style={{ background: "var(--gradient-primary)" }}>
                         <FileText className="h-5 w-5" />
                       </span>
                       <button
@@ -163,12 +157,12 @@ function LibraryPage() {
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                    <h3 className="mt-4 line-clamp-2 font-semibold">{titleOf(p)}</h3>
+                    <h3 className="mt-4 line-clamp-2 font-semibold">{titleOf(pdf)}</h3>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {p.pages ? `${p.pages} pages · ` : ""}
-                      {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ""}
+                      {pdf.pages ? `${pdf.pages} pages · ` : ""}
+                      {pdf.createdAt ? new Date(pdf.createdAt).toLocaleDateString() : ""}
                     </p>
-                    <Link to="/pdf/$id" params={{ id }} className="mt-5">
+                    <Link to={`/pdf/${id}`} className="mt-5">
                       <Button variant="secondary" className="w-full">
                         <Sparkles className="h-4 w-4" />
                         Open

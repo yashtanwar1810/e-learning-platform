@@ -1,8 +1,8 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const flashcardSchema = new mongoose.Schema(
   { question: String, answer: String },
-  { _id: false }
+  { _id: false },
 );
 
 const quizSchema = new mongoose.Schema(
@@ -12,7 +12,7 @@ const quizSchema = new mongoose.Schema(
     answerIndex: Number,
     explanation: String,
   },
-  { _id: false }
+  { _id: false },
 );
 
 const pdfSchema = new mongoose.Schema(
@@ -29,7 +29,7 @@ const pdfSchema = new mongoose.Schema(
     flashcards: [flashcardSchema],
     quiz: [quizSchema],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-module.exports = mongoose.model("Pdf", pdfSchema);
+export default mongoose.model("Pdf", pdfSchema);

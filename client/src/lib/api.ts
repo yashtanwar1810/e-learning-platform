@@ -1,3 +1,5 @@
+import axios from "axios";
+
 const RAW_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "https://e-learning-platform-t37c.onrender.com/api";
 export const API_BASE = RAW_BASE.replace(/\/$/, "");
 
@@ -27,37 +29,45 @@ type Options = {
   auth?: boolean;
 };
 
+const client = axios.create({
+  baseURL: API_BASE,
+});
+
 export async function apiFetch<T = unknown>(path: string, opts: Options = {}): Promise<T> {
   const { method = "GET", body, formData, signal, auth = true } = opts;
   const headers: Record<string, string> = {};
-  if (!formData && body !== undefined) headers["Content-Type"] = "application/json";
   if (auth) {
     const token = tokenStore.get();
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+  if (!formData && body !== undefined) {
+    headers["Content-Type"] = "application/json";
   }
 
-  let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
+    const res = await client.request<T>({
+      url: path,
       method,
       headers,
-      body: formData ?? (body !== undefined ? JSON.stringify(body) : undefined),
       signal,
+      data: formData ?? (body !== undefined ? body : undefined),
     });
-  } catch (e) {
+    return res.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const response = error.response;
+      const payload = response?.data;
+      const message =
+        (payload &&
+        typeof payload === "object" &&
+        "message" in payload &&
+        typeof (payload as { message: unknown }).message === "string"
+          ? (payload as { message: string }).message
+          : response
+            ? `Request failed (${response.status})`
+            : `Cannot reach API at ${API_BASE}. Is your backend running?`);
+      throw new ApiError(response?.status ?? 0, message, payload);
+    }
     throw new ApiError(0, `Cannot reach API at ${API_BASE}. Is your backend running?`);
   }
-
-  const contentType = res.headers.get("content-type") ?? "";
-  const payload = contentType.includes("application/json") ? await res.json().catch(() => null) : await res.text().catch(() => null);
-
-  if (!res.ok) {
-    const msg =
-      (payload && typeof payload === "object" && "message" in payload && typeof (payload as { message: unknown }).message === "string"
-        ? (payload as { message: string }).message
-        : null) || `Request failed (${res.status})`;
-    throw new ApiError(res.status, msg, payload);
-  }
-
-  return payload as T;
 }

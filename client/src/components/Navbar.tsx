@@ -1,12 +1,12 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Brain, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
+import { Link, useLocation, useNavigate } from "@/lib/router";
 
 export function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { location } = useRouterState();
+  const { pathname } = useLocation();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -18,14 +18,14 @@ export function Navbar() {
           >
             <Brain className="h-5 w-5" />
           </span>
-          <span className="text-lg font-semibold tracking-tight">Lumen</span>
+          <span className="text-lg font-semibold tracking-tight">Learnify</span>
         </Link>
 
         <nav className="flex items-center gap-2">
           {user ? (
             <>
               <Link to="/library">
-                <Button variant={location.pathname.startsWith("/library") ? "secondary" : "ghost"} size="sm">
+                <Button variant={pathname.startsWith("/library") ? "secondary" : "ghost"} size="sm">
                   My Library
                 </Button>
               </Link>

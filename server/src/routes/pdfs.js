@@ -1,10 +1,20 @@
-const path = require("path");
-const fs = require("fs");
-const fsp = fs.promises;
-const express = require("express");
-const multer = require("multer");
-const mongoose = require("mongoose");
-const { PDFParse } = require("pdf-parse");
+import express from "express";
+import multer from "multer";
+import mongoose from "mongoose";
+import fs from "fs";
+import fsp from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+
+import pdfParsePkg from "pdf-parse";
+import auth from "../middleware/auth.js";
+import Pdf from "../models/Pdf.js";
+import * as gemini from "../services/gemini.js";
+
+const { PDFParse } = pdfParsePkg;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function extractPdfText(buffer) {
   const parser = new PDFParse({ data: buffer });
@@ -20,13 +30,9 @@ async function extractPdfText(buffer) {
   }
 }
 
-const auth = require("../middleware/auth");
-const Pdf = require("../models/Pdf");
-const gemini = require("../services/gemini");
-
 const router = express.Router();
-
 const uploadDir = path.join(__dirname, "..", "uploads");
+
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -36,6 +42,7 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${safe}`);
   },
 });
+
 const upload = multer({
   storage,
   limits: { fileSize: 25 * 1024 * 1024 },
@@ -71,6 +78,7 @@ async function getOwned(req, res, withText = false) {
     res.status(400).json({ message: "Invalid PDF id" });
     return null;
   }
+
   const query = Pdf.findOne({ _id: req.params.id, user: req.user._id });
   if (withText) query.select("+text");
   const pdf = await query.exec();
@@ -78,6 +86,7 @@ async function getOwned(req, res, withText = false) {
     res.status(404).json({ message: "Not found" });
     return null;
   }
+
   return pdf;
 }
 
@@ -85,8 +94,8 @@ router.get("/", async (req, res, next) => {
   try {
     const pdfs = await Pdf.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json(pdfs);
-  } catch (e) {
-    next(e);
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -94,18 +103,21 @@ router.post("/", (req, res, next) => {
   upload.fields([
     { name: "pdf", maxCount: 1 },
     { name: "file", maxCount: 1 },
-  ])(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message || "Upload failed" });
+  ])(req, res, async (error) => {
+    if (error) {
+      return res.status(400).json({ message: error.message || "Upload failed" });
     }
+
     const file = getUploadedFile(req);
     let createdPdf = null;
+
     try {
       if (!file) return res.status(400).json({ message: "No file uploaded" });
 
       const buffer = await fsp.readFile(file.path);
       let text = "";
       let pages = 0;
+
       try {
         const parsed = await extractPdfText(buffer);
         text = parsed.text;
@@ -126,11 +138,11 @@ router.post("/", (req, res, next) => {
       });
 
       res.status(201).json(createdPdf);
-    } catch (e) {
+    } catch (routeError) {
       if (!createdPdf) {
         await removeFile(file?.path);
       }
-      next(e);
+      next(routeError);
     }
   });
 });
@@ -140,8 +152,8 @@ router.get("/:id", async (req, res, next) => {
     const pdf = await getOwned(req, res);
     if (!pdf) return;
     res.json(pdf);
-  } catch (e) {
-    next(e);
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -152,8 +164,8 @@ router.delete("/:id", async (req, res, next) => {
     await removeFile(pdf.path);
     await pdf.deleteOne();
     res.json({ ok: true });
-  } catch (e) {
-    next(e);
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -167,8 +179,8 @@ router.get("/:id/summary", async (req, res, next) => {
       await pdf.save();
     }
     res.json({ summary: pdf.summary });
-  } catch (e) {
-    next(e);
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -182,8 +194,8 @@ router.get("/:id/flashcards", async (req, res, next) => {
       await pdf.save();
     }
     res.json({ flashcards: pdf.flashcards });
-  } catch (e) {
-    next(e);
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -197,9 +209,9 @@ router.get("/:id/quiz", async (req, res, next) => {
       await pdf.save();
     }
     res.json({ quiz: pdf.quiz });
-  } catch (e) {
-    next(e);
+  } catch (error) {
+    next(error);
   }
 });
 
-module.exports = router;
+export default router;

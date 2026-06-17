@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
@@ -6,11 +6,11 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.methods.toJSON = function () {
   return { id: this._id.toString(), name: this.name, email: this.email };
 };
 
-module.exports = mongoose.model("User", userSchema);
+export default mongoose.model("User", userSchema);

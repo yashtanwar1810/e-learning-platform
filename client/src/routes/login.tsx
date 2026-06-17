@@ -1,4 +1,3 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
@@ -6,12 +5,9 @@ import { AuthCard } from "@/components/AuthCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Link, useNavigate } from "@/lib/router";
 
-export const Route = createFileRoute("/login")({
-  component: LoginPage,
-});
-
-function LoginPage() {
+export function LoginPage() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -19,7 +15,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) navigate({ to: "/library" });
+    if (user) navigate("/library", { replace: true });
   }, [user, navigate]);
 
   const onSubmit = async (e: FormEvent) => {
@@ -28,9 +24,9 @@ function LoginPage() {
     try {
       await login(email, password);
       toast.success("Welcome back!");
-      navigate({ to: "/library" });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Login failed");
+      navigate("/library", { replace: true });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Login failed");
     } finally {
       setLoading(false);
     }

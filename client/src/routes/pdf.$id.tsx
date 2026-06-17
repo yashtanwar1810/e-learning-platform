@@ -1,4 +1,3 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, FileText, Loader2, RefreshCw } from "lucide-react";
@@ -9,14 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch, ApiError } from "@/lib/api";
 import { Flashcards, type Flashcard } from "@/components/Flashcards";
 import { Quiz, type QuizQuestion } from "@/components/Quiz";
-
-export const Route = createFileRoute("/pdf/$id")({
-  component: () => (
-    <RequireAuth>
-      <PdfDetail />
-    </RequireAuth>
-  ),
-});
+import { Link, useParams } from "@/lib/router";
 
 type Pdf = {
   _id?: string;
@@ -34,8 +26,16 @@ function unwrap<T>(res: unknown, key: string): T {
   return res as T;
 }
 
-function PdfDetail() {
-  const { id } = Route.useParams();
+export function PdfPage() {
+  return (
+    <RequireAuth>
+      <PdfContent />
+    </RequireAuth>
+  );
+}
+
+function PdfContent() {
+  const { id = "" } = useParams("/pdf/:id");
   const [pdf, setPdf] = useState<Pdf | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [cards, setCards] = useState<Flashcard[] | null>(null);
@@ -47,46 +47,46 @@ function PdfDetail() {
     setCards(null);
     setQuiz(null);
     apiFetch<Pdf | { pdf: Pdf }>(`/pdfs/${id}`)
-      .then((r) => setPdf(unwrap<Pdf>(r, "pdf")))
-      .catch((e) => toast.error(e instanceof ApiError ? e.message : "Failed to load PDF"));
+      .then((response) => setPdf(unwrap<Pdf>(response, "pdf")))
+      .catch((error) => toast.error(error instanceof ApiError ? error.message : "Failed to load PDF"));
   }, [id]);
 
   const loadSummary = async (force = false) => {
-    setLoading((l) => ({ ...l, summary: true }));
+    setLoading((current) => ({ ...current, summary: true }));
     try {
       const path = force ? `/pdfs/${id}/summary?force=1` : `/pdfs/${id}/summary`;
       const res = await apiFetch<unknown>(path);
       setSummary(unwrap<string>(res, "summary"));
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Failed to load summary");
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to load summary");
     } finally {
-      setLoading((l) => ({ ...l, summary: false }));
+      setLoading((current) => ({ ...current, summary: false }));
     }
   };
 
   const loadFlashcards = async (force = false) => {
-    setLoading((l) => ({ ...l, flashcards: true }));
+    setLoading((current) => ({ ...current, flashcards: true }));
     try {
       const path = force ? `/pdfs/${id}/flashcards?force=1` : `/pdfs/${id}/flashcards`;
       const res = await apiFetch<unknown>(path);
       setCards(unwrap<Flashcard[]>(res, "flashcards"));
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Failed to load flashcards");
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to load flashcards");
     } finally {
-      setLoading((l) => ({ ...l, flashcards: false }));
+      setLoading((current) => ({ ...current, flashcards: false }));
     }
   };
 
   const loadQuiz = async (force = false) => {
-    setLoading((l) => ({ ...l, quiz: true }));
+    setLoading((current) => ({ ...current, quiz: true }));
     try {
       const path = force ? `/pdfs/${id}/quiz?force=1` : `/pdfs/${id}/quiz`;
       const res = await apiFetch<unknown>(path);
       setQuiz(unwrap<QuizQuestion[]>(res, "quiz"));
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Failed to load quiz");
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to load quiz");
     } finally {
-      setLoading((l) => ({ ...l, quiz: false }));
+      setLoading((current) => ({ ...current, quiz: false }));
     }
   };
 
@@ -106,10 +106,7 @@ function PdfDetail() {
         </Link>
 
         <div className="mt-6 flex items-start gap-4">
-          <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-primary-foreground shadow-glow"
-            style={{ background: "var(--gradient-primary)" }}
-          >
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-primary-foreground shadow-glow" style={{ background: "var(--gradient-primary)" }}>
             <FileText className="h-6 w-6" />
           </span>
           <div>
@@ -121,10 +118,10 @@ function PdfDetail() {
         <Tabs
           defaultValue="summary"
           className="mt-8"
-          onValueChange={(v) => {
-            if (v === "summary" && summary == null) loadSummary();
-            if (v === "flashcards" && cards == null) loadFlashcards();
-            if (v === "quiz" && quiz == null) loadQuiz();
+          onValueChange={(value) => {
+            if (value === "summary" && summary == null) loadSummary();
+            if (value === "flashcards" && cards == null) loadFlashcards();
+            if (value === "quiz" && quiz == null) loadQuiz();
           }}
         >
           <TabsList className="grid w-full max-w-md grid-cols-3">
