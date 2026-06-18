@@ -37,4 +37,7 @@ AI results are cached on the `Pdf` document after the first generation.
 ## Deploy
 
 Works on any Node host (Render, Railway, Fly.io, a VPS). Set the same env vars
-and point the frontend's `VITE_API_URL` at the deployed URL.
+and point the frontend's `VITE_API_URL` at the deployed URL. Set `CORS_ORIGIN`
+on the backend to the exact frontend origin, for example
+`https://e-learning-platform-ashen-eta.vercel.app`. Use comma-separated values
+for multiple origins.

@@ -10,20 +10,60 @@ dotenv.config();
 
 const app = express();
 
-function parseCorsOrigins(value) {
-  if (!value) return true;
-  return value
-    .split(",")
-    .map((origin) => origin.trim())
+const DEFAULT_ALLOWED_ORIGINS = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:8080",
+  "http://127.0.0.1:8080",
+  "https://e-learning-platform-ashen-eta.vercel.app",
+];
+
+function normalizeOrigin(origin) {
+  try {
+    return new URL(origin).origin;
+  } catch {
+    return null;
+  }
+}
+
+function parseCorsOrigins(...values) {
+  return values
+    .filter(Boolean)
+    .flatMap((value) => value.split(","))
+    .map((origin) => normalizeOrigin(origin.trim()))
     .filter(Boolean);
 }
 
-app.use(
-  cors({
-    origin: parseCorsOrigins(process.env.CORS_ORIGIN),
-    credentials: true,
-  }),
+const allowedOrigins = new Set(
+  parseCorsOrigins(DEFAULT_ALLOWED_ORIGINS.join(","), process.env.CORS_ORIGIN),
 );
+const allowVercelPreviews = process.env.CORS_ALLOW_VERCEL_PREVIEWS === "true";
+const vercelPreviewOriginPattern = /^https:\/\/e-learning-platform-[a-z0-9-]+\.vercel\.app$/;
+
+function isAllowedOrigin(origin) {
+  const normalizedOrigin = normalizeOrigin(origin);
+  if (!normalizedOrigin) return false;
+  if (allowedOrigins.has(normalizedOrigin)) return true;
+  return allowVercelPreviews && vercelPreviewOriginPattern.test(normalizedOrigin);
+}
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || isAllowedOrigin(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS blocked origin: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
